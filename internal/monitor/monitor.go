@@ -11,23 +11,30 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
 // Stats — снимок системных метрик для виджетов и API.
 type Stats struct {
 	CPUPercent    float64 `json:"cpu_percent"`
+	CPUModelName  string  `json:"cpu_model_name,omitempty"`
+	CPUMhz        float64 `json:"cpu_mhz,omitempty"`
 	MemoryPercent float64 `json:"memory_percent"`
 	MemoryUsedMB  uint64  `json:"memory_used_mb"`
 	MemoryTotalMB uint64  `json:"memory_total_mb"`
 	DiskPercent   float64 `json:"disk_percent"`
 	DiskUsedGB    uint64  `json:"disk_used_gb"`
 	DiskTotalGB   uint64  `json:"disk_total_gb"`
-	GPUPercent    float64 `json:"gpu_percent,omitempty"`
-	GPUName       string  `json:"gpu_name,omitempty"`
-	GPUTempC      int     `json:"gpu_temp_c,omitempty"`
-	UptimeSec     uint64  `json:"uptime_sec"`
+	GPUPercent       float64 `json:"gpu_percent,omitempty"`
+	GPUName          string  `json:"gpu_name,omitempty"`
+	GPUTempC         int     `json:"gpu_temp_c,omitempty"`
+	GPUMemoryUsedMB  uint64  `json:"gpu_memory_used_mb,omitempty"`
+	GPUMemoryTotalMB uint64  `json:"gpu_memory_total_mb,omitempty"`
+	UptimeSec        uint64  `json:"uptime_sec"`
 	ProcessCount  int     `json:"process_count"`
+	NetBytesSent  uint64  `json:"net_bytes_sent,omitempty"`
+	NetBytesRecv  uint64  `json:"net_bytes_recv,omitempty"`
 	Timestamp     int64   `json:"timestamp"`
 }
 
@@ -67,6 +74,13 @@ func (c *Collector) collect() {
 		cpuPct = percents[0]
 	}
 
+	cpuModelName := ""
+	cpuMhz := 0.0
+	if infos, err := cpu.Info(); err == nil && len(infos) > 0 {
+		cpuModelName = infos[0].ModelName
+		cpuMhz = infos[0].Mhz
+	}
+
 	v, err := mem.VirtualMemory()
 	memPct := 0.0
 	memUsed := uint64(0)
@@ -104,23 +118,36 @@ func (c *Collector) collect() {
 		processCount = len(pids)
 	}
 
-	gpuPct, gpuName, gpuTemp := getGPUStats()
+	gpu := getGPUStats()
+
+	netSent := uint64(0)
+	netRecv := uint64(0)
+	if counters, err := net.IOCounters(false); err == nil && len(counters) > 0 {
+		netSent = counters[0].BytesSent
+		netRecv = counters[0].BytesRecv
+	}
 
 	c.mu.Lock()
 	c.last = Stats{
-		CPUPercent:    cpuPct,
-		MemoryPercent: memPct,
-		MemoryUsedMB:  memUsed,
-		MemoryTotalMB: memTotal,
-		DiskPercent:   diskPct,
-		DiskUsedGB:    diskUsedGB,
-		DiskTotalGB:   diskTotalGB,
-		GPUPercent:    gpuPct,
-		GPUName:       gpuName,
-		GPUTempC:      gpuTemp,
-		UptimeSec:     uptimeSec,
-		ProcessCount:  processCount,
-		Timestamp:     time.Now().Unix(),
+		CPUPercent:       cpuPct,
+		CPUModelName:     cpuModelName,
+		CPUMhz:           cpuMhz,
+		MemoryPercent:    memPct,
+		MemoryUsedMB:     memUsed,
+		MemoryTotalMB:    memTotal,
+		DiskPercent:      diskPct,
+		DiskUsedGB:       diskUsedGB,
+		DiskTotalGB:      diskTotalGB,
+		GPUPercent:       gpu.UtilPercent,
+		GPUName:          gpu.Name,
+		GPUTempC:         gpu.TempC,
+		GPUMemoryUsedMB:  gpu.MemoryUsedMB,
+		GPUMemoryTotalMB: gpu.MemoryTotalMB,
+		UptimeSec:        uptimeSec,
+		ProcessCount:     processCount,
+		NetBytesSent:     netSent,
+		NetBytesRecv:     netRecv,
+		Timestamp:        time.Now().Unix(),
 	}
 	c.mu.Unlock()
 }
