@@ -2,11 +2,16 @@ package monitor
 
 import (
 	"context"
+	"os"
+	"runtime"
 	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // Stats — снимок системных метрик для виджетов и API.
@@ -15,6 +20,11 @@ type Stats struct {
 	MemoryPercent float64 `json:"memory_percent"`
 	MemoryUsedMB  uint64  `json:"memory_used_mb"`
 	MemoryTotalMB uint64  `json:"memory_total_mb"`
+	DiskPercent   float64 `json:"disk_percent"`
+	DiskUsedGB    uint64  `json:"disk_used_gb"`
+	DiskTotalGB   uint64  `json:"disk_total_gb"`
+	UptimeSec     uint64  `json:"uptime_sec"`
+	ProcessCount  int     `json:"process_count"`
 	Timestamp     int64   `json:"timestamp"`
 }
 
@@ -64,12 +74,44 @@ func (c *Collector) collect() {
 		memTotal = v.Total / (1024 * 1024)
 	}
 
+	diskPct := 0.0
+	diskUsedGB := uint64(0)
+	diskTotalGB := uint64(0)
+	diskPath := "/"
+	if runtime.GOOS == "windows" {
+		drive := os.Getenv("SystemDrive")
+		if drive == "" {
+			drive = "C:"
+		}
+		diskPath = drive + "\\"
+	}
+	if usage, err := disk.Usage(diskPath); err == nil && usage != nil {
+		diskPct = usage.UsedPercent
+		diskUsedGB = usage.Used / (1024 * 1024 * 1024)
+		diskTotalGB = usage.Total / (1024 * 1024 * 1024)
+	}
+
+	uptimeSec := uint64(0)
+	if up, err := host.Uptime(); err == nil {
+		uptimeSec = up
+	}
+
+	processCount := 0
+	if pids, err := process.Pids(); err == nil {
+		processCount = len(pids)
+	}
+
 	c.mu.Lock()
 	c.last = Stats{
 		CPUPercent:    cpuPct,
 		MemoryPercent: memPct,
 		MemoryUsedMB:  memUsed,
 		MemoryTotalMB: memTotal,
+		DiskPercent:   diskPct,
+		DiskUsedGB:    diskUsedGB,
+		DiskTotalGB:   diskTotalGB,
+		UptimeSec:     uptimeSec,
+		ProcessCount:  processCount,
 		Timestamp:     time.Now().Unix(),
 	}
 	c.mu.Unlock()
@@ -110,6 +152,7 @@ func CollectOnce(ctx context.Context) (Stats, error) {
 		MemoryPercent: memPct,
 		MemoryUsedMB:  memUsed,
 		MemoryTotalMB: memTotal,
+		// Остальные метрики — в режиме CollectOnce не критичны для модуля; при необходимости можно расширить.
 		Timestamp:     time.Now().Unix(),
 	}, nil
 }

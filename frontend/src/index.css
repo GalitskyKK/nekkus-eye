@@ -14,3 +14,19 @@ select,
 button {
   font: inherit;
 }
+
+.eye-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.eye-card {
+  min-width: 140px;
+}
+
+.eye-chart-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--nekkus-muted, #64748b);
+}
