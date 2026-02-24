@@ -1,0 +1,60 @@
+version: "3"
+
+vars:
+  APP_NAME: "nekkus-eye"
+  BIN_DIR: "bin"
+  PACKAGE_DIR: "dist/com.nekkus.eye"
+  HTTP_PORT: "9002"
+
+tasks:
+  ui:build:
+    summary: Build frontend into ui/frontend/dist
+    dir: frontend
+    cmds:
+      - npm install
+      - npm run build
+
+  build:go:
+    summary: Build only Go binary (no frontend)
+    cmds:
+      - go build -o "{{.BIN_DIR}}/{{.APP_NAME}}{{.exeExt}}" ./cmd
+    vars:
+      exeExt: '{{if eq OS "windows"}}.exe{{end}}'
+
+  build:
+    summary: Build frontend and Go binary
+    deps:
+      - ui:build
+      - build:go
+
+  package:
+    summary: Create com.nekkus.eye folder with binary and manifest
+    deps:
+      - build
+    cmds:
+      - mkdir -p "{{.PACKAGE_DIR}}"
+      - cp "{{.BIN_DIR}}/{{.APP_NAME}}{{.exeExt}}" "{{.PACKAGE_DIR}}/"
+      - go run ./scripts/gen_manifest.go "{{.PACKAGE_DIR}}" "{{.VERSION | default "0.1.0"}}"
+    vars:
+      exeExt: '{{if eq OS "windows"}}.exe{{end}}'
+      VERSION: "{{.VERSION}}"
+
+  dev:
+    summary: Run Go server only (headless, port 9002). For UI with hot reload run dev:ui in another terminal and open http://localhost:5173
+    cmds:
+      - go run ./cmd/ --port {{.HTTP_PORT}} --headless
+
+  dev:ui:
+    summary: Run Vite dev server (hot reload). Start dev first in another terminal so API is on :9002
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  run:
+    summary: Run built binary
+    deps:
+      - build
+    cmds:
+      - "{{.BIN_DIR}}/{{.APP_NAME}}{{.exeExt}}"
+    vars:
+      exeExt: '{{if eq OS "windows"}}.exe{{end}}'
