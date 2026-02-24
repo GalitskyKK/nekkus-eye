@@ -8,6 +8,9 @@ export interface Stats {
   disk_percent?: number
   disk_used_gb?: number
   disk_total_gb?: number
+  gpu_percent?: number
+  gpu_name?: string
+  gpu_temp_c?: number
   uptime_sec?: number
   process_count?: number
   timestamp: number

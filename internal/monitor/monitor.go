@@ -23,6 +23,9 @@ type Stats struct {
 	DiskPercent   float64 `json:"disk_percent"`
 	DiskUsedGB    uint64  `json:"disk_used_gb"`
 	DiskTotalGB   uint64  `json:"disk_total_gb"`
+	GPUPercent    float64 `json:"gpu_percent,omitempty"`
+	GPUName       string  `json:"gpu_name,omitempty"`
+	GPUTempC      int     `json:"gpu_temp_c,omitempty"`
 	UptimeSec     uint64  `json:"uptime_sec"`
 	ProcessCount  int     `json:"process_count"`
 	Timestamp     int64   `json:"timestamp"`
@@ -101,6 +104,8 @@ func (c *Collector) collect() {
 		processCount = len(pids)
 	}
 
+	gpuPct, gpuName, gpuTemp := getGPUStats()
+
 	c.mu.Lock()
 	c.last = Stats{
 		CPUPercent:    cpuPct,
@@ -110,6 +115,9 @@ func (c *Collector) collect() {
 		DiskPercent:   diskPct,
 		DiskUsedGB:    diskUsedGB,
 		DiskTotalGB:   diskTotalGB,
+		GPUPercent:    gpuPct,
+		GPUName:       gpuName,
+		GPUTempC:      gpuTemp,
 		UptimeSec:     uptimeSec,
 		ProcessCount:  processCount,
 		Timestamp:     time.Now().Unix(),

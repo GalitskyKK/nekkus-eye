@@ -12,6 +12,7 @@ import { fetchStats, type Stats } from './api'
 
 const REFRESH_MS = 2000
 const CHART_POINTS = 20
+const CHART_HEIGHT = 72
 const EYE_COLOR = '#10B981'
 
 function formatMB(mb: number): string {
@@ -128,39 +129,59 @@ export default function App() {
                 />
               </Card>
             )}
+            {(stats.gpu_percent != null || (stats.gpu_name != null && stats.gpu_name !== '') || stats.gpu_temp_c != null) && (
+              <Card variant="elevated" moduleGlow="eye" className="eye-card">
+                <MetricHero
+                  value={stats.gpu_percent != null ? `${stats.gpu_percent.toFixed(1)}%` : '—'}
+                  label="GPU"
+                />
+                {stats.gpu_name ? (
+                  <DataText size="sm">{stats.gpu_name}</DataText>
+                ) : null}
+                {stats.gpu_temp_c != null && stats.gpu_temp_c > 0 ? (
+                  <DataText size="sm">{stats.gpu_temp_c} °C</DataText>
+                ) : null}
+              </Card>
+            )}
           </div>
         </Section>
 
-        <Section title="История CPU">
+        <Section title="История">
           <p className="eye-chart-hint">
-            Последние {CHART_POINTS} замеров, обновление каждые {REFRESH_MS / 1000} с. Слева направо — от старых к новым.
+            Последние {CHART_POINTS} замеров, каждые {REFRESH_MS / 1000} с. Слева → новее.
           </p>
-          <Card variant="default">
-            <Chart
-              data={padHistory(cpuHistory, CHART_POINTS)}
-              height={140}
-              color={EYE_COLOR}
-              showValueLabels
-              valueSuffix="%"
-              maxValue={100}
-            />
-          </Card>
-        </Section>
-
-        <Section title="История памяти">
-          <p className="eye-chart-hint">
-            Последние {CHART_POINTS} замеров, обновление каждые {REFRESH_MS / 1000} с.
-          </p>
-          <Card variant="default">
-            <Chart
-              data={padHistory(memHistory, CHART_POINTS)}
-              height={140}
-              color={EYE_COLOR}
-              showValueLabels
-              valueSuffix="%"
-              maxValue={100}
-            />
-          </Card>
+          <div className="eye-charts-row">
+            <div className="eye-chart-block">
+              <div className="eye-chart-block-header">
+                <span className="eye-chart-block-title">CPU</span>
+                <span className="eye-chart-block-value">{stats.cpu_percent.toFixed(1)}%</span>
+              </div>
+              <Card variant="default" className="eye-chart-card">
+                <Chart
+                  data={padHistory(cpuHistory, CHART_POINTS)}
+                  height={CHART_HEIGHT}
+                  color={EYE_COLOR}
+                  valueSuffix="%"
+                  maxValue={100}
+                />
+              </Card>
+            </div>
+            <div className="eye-chart-block">
+              <div className="eye-chart-block-header">
+                <span className="eye-chart-block-title">Память</span>
+                <span className="eye-chart-block-value">{stats.memory_percent.toFixed(1)}%</span>
+              </div>
+              <Card variant="default" className="eye-chart-card">
+                <Chart
+                  data={padHistory(memHistory, CHART_POINTS)}
+                  height={CHART_HEIGHT}
+                  color={EYE_COLOR}
+                  valueSuffix="%"
+                  maxValue={100}
+                />
+              </Card>
+            </div>
+          </div>
         </Section>
       </PageLayout>
     </div>
