@@ -15,6 +15,12 @@ button {
   font: inherit;
 }
 
+.eye-overview-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--nekkus-muted, #64748b);
+}
+
 .eye-overview {
   display: flex;
   flex-wrap: wrap;
@@ -23,6 +29,47 @@ button {
 
 .eye-card {
   min-width: 140px;
+}
+
+.eye-card--clickable {
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.eye-card--clickable:hover {
+  opacity: 0.95;
+}
+
+.eye-card--clickable:focus-visible {
+  outline: 2px solid var(--nekkus-accent, #10B981);
+  outline-offset: 2px;
+}
+
+.eye-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.eye-section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--nekkus-card, #e2e8f0);
+}
+
+.eye-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eye-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
 }
 
 .eye-chart-hint {

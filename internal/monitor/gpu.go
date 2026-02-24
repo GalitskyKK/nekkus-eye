@@ -21,6 +21,7 @@ func getGPUStats() (float64, string, int) {
 		"--query-gpu=utilization.gpu,name,temperature.gpu",
 		"--format=csv,noheader,nounits",
 	)
+	setProcessNoWindow(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
