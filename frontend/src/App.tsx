@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import {
+  AppShell,
   Button,
   Card,
   DataText,
@@ -253,8 +254,8 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="nekkus-theme" data-nekkus-root style={{ padding: 24 }}>
-        <Card variant="default">
+      <div className="nekkus-theme nekkus-glass-root" data-nekkus-root style={{ padding: 24 }}>
+        <Card variant="default" className="nekkus-glass-card">
           <DataText>Error: {error}</DataText>
           <button type="button" onClick={load}>Retry</button>
         </Card>
@@ -264,7 +265,7 @@ export default function App() {
 
   if (!stats) {
     return (
-      <div className="nekkus-theme" data-nekkus-root style={{ padding: 24 }}>
+      <div className="nekkus-theme nekkus-glass-root" data-nekkus-root style={{ padding: 24 }}>
         <p>Loading…</p>
       </div>
     )
@@ -273,8 +274,13 @@ export default function App() {
   // Главная: блоки-карточки по разделам (клик → раздел с графиками)
   if (selectedSection === null) {
     return (
-      <div className="nekkus-theme" data-nekkus-root>
+      <div className="nekkus-theme nekkus-glass-root" data-nekkus-root>
         <PageLayout>
+          <AppShell
+            logo="Nekkus"
+            title="Eye"
+            description="CPU, память, диск, GPU, сеть, процессы."
+          >
           <Section title="Обзор">
             <p className="eye-overview-hint">
               Нажмите на блок — откроется раздел с полной статистикой и графиком.
@@ -283,7 +289,7 @@ export default function App() {
               <Card
                 variant="elevated"
                 moduleGlow="eye"
-                className="eye-card eye-card--large eye-card--clickable"
+                className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                 onClick={() => setSelectedSection('cpu')}
                 role="button"
                 tabIndex={0}
@@ -312,7 +318,7 @@ export default function App() {
               <Card
                 variant="elevated"
                 moduleGlow="eye"
-                className="eye-card eye-card--large eye-card--clickable"
+                className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                 onClick={() => setSelectedSection('memory')}
                 role="button"
                 tabIndex={0}
@@ -333,7 +339,7 @@ export default function App() {
                 <Card
                   variant="elevated"
                   moduleGlow="eye"
-                  className="eye-card eye-card--large eye-card--clickable"
+                  className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                   onClick={() => setSelectedSection('disk')}
                   role="button"
                   tabIndex={0}
@@ -352,7 +358,7 @@ export default function App() {
                 <Card
                   variant="elevated"
                   moduleGlow="eye"
-                  className="eye-card eye-card--large eye-card--clickable"
+                  className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                   onClick={() => setSelectedSection('gpu')}
                   role="button"
                   tabIndex={0}
@@ -378,7 +384,7 @@ export default function App() {
               <Card
                 variant="elevated"
                 moduleGlow="eye"
-                className="eye-card eye-card--large eye-card--clickable"
+                className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                 onClick={() => setSelectedSection('network')}
                 role="button"
                 tabIndex={0}
@@ -396,7 +402,7 @@ export default function App() {
                 <Card
                   variant="elevated"
                   moduleGlow="eye"
-                  className="eye-card eye-card--large eye-card--clickable"
+                  className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                   onClick={() => setSelectedSection('uptime')}
                   role="button"
                   tabIndex={0}
@@ -412,7 +418,7 @@ export default function App() {
                 <Card
                   variant="elevated"
                   moduleGlow="eye"
-                  className="eye-card eye-card--large eye-card--clickable"
+                  className="eye-card eye-card--large eye-card--clickable nekkus-glass-card"
                   onClick={() => setSelectedSection('processes')}
                   role="button"
                   tabIndex={0}
@@ -427,6 +433,7 @@ export default function App() {
               )}
             </div>
           </Section>
+          </AppShell>
         </PageLayout>
       </div>
     )
@@ -444,8 +451,13 @@ export default function App() {
   }
 
   return (
-    <div className="nekkus-theme" data-nekkus-root>
+    <div className="nekkus-theme nekkus-glass-root" data-nekkus-root>
       <PageLayout>
+        <AppShell
+          logo="Nekkus"
+          title="Eye"
+          description="CPU, память, диск, GPU, сеть, процессы."
+        >
         <Section title="">
           <div className="eye-section-header">
             <Button
@@ -676,6 +688,7 @@ export default function App() {
             </MonitoringErrorBoundary>
           )}
         </Section>
+        </AppShell>
       </PageLayout>
     </div>
   )
