@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,6 +45,8 @@ type Stats struct {
 	GPUTempC         int     `json:"gpu_temp_c,omitempty"`
 	GPUMemoryUsedMB  uint64  `json:"gpu_memory_used_mb,omitempty"`
 	GPUMemoryTotalMB uint64  `json:"gpu_memory_total_mb,omitempty"`
+	// CPU температура (°C), если доступна (Linux: sensors; Windows: часто 0).
+	CPUTempC int `json:"cpu_temp_c,omitempty"`
 	// Система
 	Hostname     string `json:"hostname,omitempty"`
 	Platform     string `json:"platform,omitempty"`      // windows / linux / darwin
@@ -156,6 +159,20 @@ func (c *Collector) collect() {
 		diskFreeGB = usage.Free / (1024 * 1024 * 1024)
 	}
 
+	cpuTempC := 0
+	if temps, err := host.SensorsTemperatures(); err == nil {
+		for _, t := range temps {
+			if t.SensorKey == "coretemp" || strings.Contains(strings.ToLower(t.SensorKey), "cpu") || strings.Contains(strings.ToLower(t.SensorKey), "package") {
+				if t.Temperature > 0 && (cpuTempC == 0 || int(t.Temperature) < cpuTempC) {
+					cpuTempC = int(t.Temperature)
+				}
+			}
+		}
+		if cpuTempC == 0 && len(temps) > 0 {
+			cpuTempC = int(temps[0].Temperature)
+		}
+	}
+
 	hostname := ""
 	platform := ""
 	osName := ""
@@ -214,6 +231,7 @@ func (c *Collector) collect() {
 		GPUTempC:          gpu.TempC,
 		GPUMemoryUsedMB:   gpu.MemoryUsedMB,
 		GPUMemoryTotalMB:  gpu.MemoryTotalMB,
+		CPUTempC:          cpuTempC,
 		Hostname:          hostname,
 		Platform:          platform,
 		OS:                osName,

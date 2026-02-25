@@ -21,7 +21,14 @@ func RegisterRoutes(srv *coreserver.Server, collector *monitor.Collector) {
 		setCORS(w)
 		w.Header().Set("Content-Type", "application/json")
 		stats := collector.Get()
-		_ = json.NewEncoder(w).Encode(stats)
+		topProcs, _ := monitor.ListTopProcessesByCPU(5)
+		var resp map[string]interface{}
+		if b, err := json.Marshal(stats); err == nil && json.Unmarshal(b, &resp) == nil {
+			resp["top_processes"] = topProcs
+		} else {
+			resp = map[string]interface{}{"timestamp": stats.Timestamp, "top_processes": topProcs}
+		}
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 
 	srv.Mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, _ *http.Request) {
@@ -40,7 +47,8 @@ func RegisterRoutes(srv *coreserver.Server, collector *monitor.Collector) {
 			}
 		}
 		q := r.URL.Query().Get("q")
-		list, err := monitor.ListProcesses(limit, q)
+		withMetrics := r.URL.Query().Get("with_metrics") == "1" || r.URL.Query().Get("with_metrics") == "true"
+		list, err := monitor.ListProcesses(limit, q, withMetrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

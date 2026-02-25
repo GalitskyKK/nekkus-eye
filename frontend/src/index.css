@@ -55,13 +55,24 @@ button {
   .eye-charts-row {
     grid-template-columns: 1fr;
   }
-  .eye-processes-row {
-    grid-template-columns: 60px 1fr auto;
-    gap: 8px;
-    font-size: 12px;
+  .eye-processes-table .eye-processes-pid { width: 48px; }
+  .eye-processes-table .eye-processes-name { width: auto; }
+  .eye-processes-table .eye-processes-cpu { width: 44px; }
+  .eye-processes-table .eye-processes-mem,
+  .eye-processes-table .eye-processes-net,
+  .eye-processes-table .eye-processes-conn {
+    display: none !important;
   }
-  .eye-processes-mem {
-    display: none;
+  .eye-processes-table .eye-processes-kill-cell { width: 90px; }
+  .eye-processes-row > .eye-processes-mem,
+  .eye-processes-row > .eye-processes-net,
+  .eye-processes-row > .eye-processes-conn {
+    display: none !important;
+  }
+  .eye-processes-thead .eye-processes-mem,
+  .eye-processes-thead .eye-processes-net,
+  .eye-processes-thead .eye-processes-conn {
+    display: none !important;
   }
 }
 
@@ -229,26 +240,96 @@ button {
 .eye-processes-list {
   border: 1px solid var(--nekkus-border, #334155);
   border-radius: 8px;
-  overflow: hidden;
-  max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 400px;
+}
+
+/* Таблица: колонки ровно друг над другом, заголовок фиксирован при скролле */
+.eye-processes-table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.eye-processes-thead {
+  display: table-header-group;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.eye-processes-thead .eye-processes-row {
+  display: table-row;
+}
+
+.eye-processes-thead .eye-processes-pid,
+.eye-processes-thead .eye-processes-name,
+.eye-processes-thead .eye-processes-cpu,
+.eye-processes-thead .eye-processes-mem,
+.eye-processes-thead .eye-processes-net,
+.eye-processes-thead .eye-processes-conn,
+.eye-processes-thead .eye-processes-kill-cell {
+  display: table-cell;
+  padding: 10px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--nekkus-muted, #64748b);
+  border-bottom: 1px solid var(--nekkus-border, #334155);
+  vertical-align: middle;
+}
+
+.eye-processes-tbody {
+  display: table-row-group;
 }
 
 .eye-processes-row {
-  display: grid;
-  grid-template-columns: 80px 1fr auto auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--nekkus-border, #334155);
-  font-size: 13px;
+  display: table-row;
 }
 
-.eye-processes-row:last-child {
+.eye-processes-row > .eye-processes-pid,
+.eye-processes-row > .eye-processes-name,
+.eye-processes-row > .eye-processes-cpu,
+.eye-processes-row > .eye-processes-mem,
+.eye-processes-row > .eye-processes-net,
+.eye-processes-row > .eye-processes-conn,
+.eye-processes-row > .eye-processes-kill-cell {
+  display: table-cell;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--nekkus-border, #334155);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.eye-processes-table .eye-processes-pid { width: 56px; }
+.eye-processes-table .eye-processes-name { width: auto; }
+.eye-processes-table .eye-processes-cpu { width: 52px; }
+.eye-processes-table .eye-processes-mem { width: 72px; }
+.eye-processes-table .eye-processes-net { width: 100px; }
+.eye-processes-table .eye-processes-conn { width: 48px; }
+.eye-processes-table .eye-processes-kill-cell { width: 90px; }
+
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-pid,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-name,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-cpu,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-mem,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-net,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-conn,
+.eye-processes-tbody .eye-processes-row:last-child .eye-processes-kill-cell {
   border-bottom: none;
 }
 
-.eye-processes-row:hover {
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-pid,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-name,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-cpu,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-mem,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-net,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-conn,
+.eye-processes-tbody .eye-processes-row:hover .eye-processes-kill-cell {
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -263,10 +344,28 @@ button {
   white-space: nowrap;
 }
 
+.eye-processes-cpu {
+  font-size: 12px;
+}
+
 .eye-processes-mem {
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 12px;
   color: var(--nekkus-muted, #64748b);
+}
+
+.eye-processes-net {
+  font-size: 11px;
+}
+
+.eye-processes-conn {
+  font-size: 12px;
+}
+
+.eye-processes-kill-cell {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .eye-processes-kill {

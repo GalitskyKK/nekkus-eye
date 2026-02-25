@@ -103,7 +103,7 @@ function ProcessesPanel({
       setProcessLoading(true)
       setProcessError(null)
       try {
-        const list = await fetchProcesses({ q: q || undefined, limit: 200 })
+        const list = await fetchProcesses({ q: q || undefined, limit: 100, with_metrics: true })
         setProcessList(list)
       } catch (e) {
         setProcessError(e instanceof Error ? e.message : 'Ошибка загрузки')
@@ -168,26 +168,54 @@ function ProcessesPanel({
                 : 'Нет процессов'}
             </div>
           ) : (
-            processList.map((proc, idx) => (
-              <div key={proc?.pid ?? idx} className="eye-processes-row">
-                <span className="eye-processes-pid">{proc?.pid ?? '—'}</span>
-                <span className="eye-processes-name" title={proc?.name ?? `PID ${proc?.pid ?? ''}`}>
-                  {proc?.name && proc.name !== '?' ? proc.name : `PID ${proc?.pid ?? idx}`}
-                </span>
-                <span className="eye-processes-mem">
-                  {proc?.rss_mb != null ? `${proc.rss_mb} MB` : '—'}
-                </span>
-                <button
-                  type="button"
-                  className="eye-processes-kill"
-                  onClick={() => proc != null && handleKill(proc.pid)}
-                  disabled={processKilling === (proc?.pid ?? null)}
-                  aria-label={`Завершить процесс ${proc?.pid ?? ''}`}
-                >
-                  {processKilling === (proc?.pid ?? null) ? '…' : 'Завершить'}
-                </button>
+            <div className="eye-processes-table">
+              <div className="eye-processes-thead">
+                <div className="eye-processes-row">
+                  <span className="eye-processes-pid">PID</span>
+                  <span className="eye-processes-name">Имя</span>
+                  <span className="eye-processes-cpu">CPU</span>
+                  <span className="eye-processes-mem">Память</span>
+                  <span className="eye-processes-net">↓ / ↑</span>
+                  <span className="eye-processes-conn">Соед.</span>
+                  <span className="eye-processes-kill-cell" />
+                </div>
               </div>
-            ))
+              <div className="eye-processes-tbody">
+              {processList.map((proc, idx) => (
+                <div key={proc?.pid ?? idx} className="eye-processes-row">
+                  <span className="eye-processes-pid">{proc?.pid ?? '—'}</span>
+                  <span className="eye-processes-name" title={proc?.name ?? `PID ${proc?.pid ?? ''}`}>
+                    {proc?.name && proc.name !== '?' ? proc.name : `PID ${proc?.pid ?? idx}`}
+                  </span>
+                  <span className="eye-processes-cpu font-mono">
+                    {proc?.cpu_percent != null ? `${proc.cpu_percent.toFixed(1)}%` : '—'}
+                  </span>
+                  <span className="eye-processes-mem">
+                    {proc?.rss_mb != null ? `${proc.rss_mb} MB` : '—'}
+                  </span>
+                  <span className="eye-processes-net font-mono text-nekkus-text-dim">
+                    {proc?.net_bytes_recv != null || proc?.net_bytes_sent != null
+                      ? `${formatBytes(proc?.net_bytes_recv ?? 0)} / ${formatBytes(proc?.net_bytes_sent ?? 0)}`
+                      : '—'}
+                  </span>
+                  <span className="eye-processes-conn font-mono text-nekkus-text-dim">
+                    {proc?.connections_count != null && proc.connections_count > 0 ? proc.connections_count : '—'}
+                  </span>
+                  <span className="eye-processes-kill-cell">
+                    <button
+                      type="button"
+                      className="eye-processes-kill"
+                      onClick={() => proc != null && handleKill(proc.pid)}
+                      disabled={processKilling === (proc?.pid ?? null)}
+                      aria-label={`Завершить процесс ${proc?.pid ?? ''}`}
+                    >
+                      {processKilling === (proc?.pid ?? null) ? '…' : 'Завершить'}
+                    </button>
+                  </span>
+                </div>
+              ))}
+              </div>
+            </div>
           )}
         </div>
       ) : null}
@@ -313,6 +341,9 @@ export default function App() {
                   <div className="eye-block-extra">
                     {(stats.cpu_mhz / 1000).toFixed(2)} GHz
                   </div>
+                )}
+                {stats.cpu_temp_c != null && stats.cpu_temp_c > 0 && (
+                  <div className="eye-block-extra">{stats.cpu_temp_c} °C</div>
                 )}
                 {(stats.cpu_cores != null && stats.cpu_cores > 0) && (
                   <div className="eye-block-extra">
@@ -507,24 +538,31 @@ export default function App() {
                       <dd title={stats.cpu_model_name}>{stats.cpu_model_name}</dd>
                     </>
                   )}
+                  {(stats.cpu_cores != null && stats.cpu_cores > 0) && (
+                    <>
+                      <dt>Ядра</dt>
+                      <dd>
+                        {stats.cpu_cores} логических
+                        {stats.cpu_physical_cores != null && stats.cpu_physical_cores > 0
+                          ? ` / ${stats.cpu_physical_cores} физических`
+                          : ''}
+                      </dd>
+                    </>
+                  )}
                   {stats.cpu_mhz != null && stats.cpu_mhz > 0 && (
                     <>
                       <dt>Частота</dt>
                       <dd>{(stats.cpu_mhz / 1000).toFixed(2)} GHz</dd>
                     </>
                   )}
-                  {(stats.cpu_cores != null && stats.cpu_cores > 0) && (
+                  {stats.cpu_temp_c != null && stats.cpu_temp_c > 0 && (
                     <>
-                      <dt>Ядра (логические)</dt>
-                      <dd>{stats.cpu_cores}</dd>
+                      <dt>Температура</dt>
+                      <dd>{stats.cpu_temp_c} °C</dd>
                     </>
                   )}
-                  {(stats.cpu_physical_cores != null && stats.cpu_physical_cores > 0) && (
-                    <>
-                      <dt>Ядра (физические)</dt>
-                      <dd>{stats.cpu_physical_cores}</dd>
-                    </>
-                  )}
+                  <dt>Текущая загрузка</dt>
+                  <dd>{stats.cpu_percent.toFixed(1)}%</dd>
                 </dl>
               </Card>
               <p className="eye-chart-hint">
@@ -565,12 +603,14 @@ export default function App() {
                   <dd>{formatMB(stats.memory_total_mb)}</dd>
                   <dt>Свободно</dt>
                   <dd>{formatMB(stats.memory_free_mb ?? Math.max(0, stats.memory_total_mb - stats.memory_used_mb))}</dd>
-                  {(stats.memory_available_mb != null && stats.memory_available_mb !== stats.memory_free_mb) && (
+                  {(stats.memory_available_mb != null && stats.memory_available_mb !== (stats.memory_free_mb ?? 0)) && (
                     <>
-                      <dt>Доступно</dt>
-                      <dd>{formatMB(stats.memory_available_mb)}</dd>
+                      <dt>Доступно (с учётом кэша)</dt>
+                      <dd>{formatMB(stats.memory_available_mb)} — можно использовать под приложения без свопа</dd>
                     </>
                   )}
+                  <dt>Использовано</dt>
+                  <dd>{stats.memory_percent.toFixed(1)}% от объёма</dd>
                 </dl>
                 {(stats.swap_total_mb != null && stats.swap_total_mb > 0) && (
                   <>
@@ -619,7 +659,7 @@ export default function App() {
                 <dl className="eye-info-list">
                   {stats.disk_path && (
                     <>
-                      <dt>Путь</dt>
+                      <dt>Раздел</dt>
                       <dd>{stats.disk_path}</dd>
                     </>
                   )}
@@ -629,6 +669,12 @@ export default function App() {
                   <dd>{stats.disk_total_gb ?? 0} ГБ</dd>
                   <dt>Свободно</dt>
                   <dd>{stats.disk_free_gb ?? Math.max(0, (stats.disk_total_gb ?? 0) - (stats.disk_used_gb ?? 0))} ГБ</dd>
+                  {stats.disk_percent != null && (
+                    <>
+                      <dt>Использовано</dt>
+                      <dd>{stats.disk_percent.toFixed(1)}% от объёма</dd>
+                    </>
+                  )}
                 </dl>
               </Card>
               <p className="eye-chart-hint">
@@ -665,6 +711,12 @@ export default function App() {
                       <dd>{stats.gpu_name}</dd>
                     </>
                   )}
+                  {stats.gpu_percent != null && (
+                    <>
+                      <dt>Текущая загрузка</dt>
+                      <dd>{stats.gpu_percent.toFixed(1)}%</dd>
+                    </>
+                  )}
                   {stats.gpu_temp_c != null && stats.gpu_temp_c > 0 && (
                     <>
                       <dt>Температура</dt>
@@ -675,12 +727,6 @@ export default function App() {
                     <>
                       <dt>VRAM</dt>
                       <dd>{formatMB(stats.gpu_memory_used_mb ?? 0)} / {formatMB(stats.gpu_memory_total_mb ?? 0)}</dd>
-                    </>
-                  )}
-                  {stats.gpu_percent != null && (
-                    <>
-                      <dt>Загрузка</dt>
-                      <dd>{stats.gpu_percent.toFixed(1)}%</dd>
                     </>
                   )}
                 </dl>

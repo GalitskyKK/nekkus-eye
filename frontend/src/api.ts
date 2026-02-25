@@ -1,11 +1,19 @@
 const BASE = ''
 
+export interface EyeTopProcess {
+  pid?: number
+  name?: string
+  cpu_percent?: number
+  rss_mb?: number
+}
+
 export interface Stats {
   cpu_percent: number
   cpu_model_name?: string
   cpu_mhz?: number
   cpu_cores?: number
   cpu_physical_cores?: number
+  cpu_temp_c?: number
   memory_percent: number
   memory_used_mb: number
   memory_total_mb: number
@@ -34,6 +42,7 @@ export interface Stats {
   net_bytes_sent?: number
   net_bytes_recv?: number
   timestamp: number
+  top_processes?: EyeTopProcess[]
 }
 
 export interface ProcessInfo {
@@ -41,6 +50,10 @@ export interface ProcessInfo {
   name: string
   rss_mb?: number
   status?: string
+  cpu_percent?: number
+  net_bytes_sent?: number
+  net_bytes_recv?: number
+  connections_count?: number
 }
 
 export async function fetchStats(): Promise<Stats> {
@@ -49,10 +62,11 @@ export async function fetchStats(): Promise<Stats> {
   return res.json()
 }
 
-export async function fetchProcesses(params?: { q?: string; limit?: number }): Promise<ProcessInfo[]> {
+export async function fetchProcesses(params?: { q?: string; limit?: number; with_metrics?: boolean }): Promise<ProcessInfo[]> {
   const sp = new URLSearchParams()
   if (params?.q) sp.set('q', params.q)
   if (params?.limit) sp.set('limit', String(params.limit))
+  if (params?.with_metrics) sp.set('with_metrics', '1')
   const url = `${BASE}/api/processes${sp.toString() ? `?${sp}` : ''}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(res.statusText)
