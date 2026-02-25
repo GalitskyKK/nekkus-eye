@@ -314,6 +314,14 @@ export default function App() {
                     {(stats.cpu_mhz / 1000).toFixed(2)} GHz
                   </div>
                 )}
+                {(stats.cpu_cores != null && stats.cpu_cores > 0) && (
+                  <div className="eye-block-extra">
+                    {stats.cpu_cores} ядер
+                    {stats.cpu_physical_cores != null && stats.cpu_physical_cores > 0 && stats.cpu_physical_cores !== stats.cpu_cores
+                      ? ` (${stats.cpu_physical_cores} физ.)`
+                      : ''}
+                  </div>
+                )}
               </Card>
               <Card
                 variant="elevated"
@@ -332,8 +340,13 @@ export default function App() {
                   {formatMB(stats.memory_used_mb)} / {formatMB(stats.memory_total_mb)}
                 </div>
                 <div className="eye-block-extra">
-                  Свободно: {formatMB(Math.max(0, stats.memory_total_mb - stats.memory_used_mb))}
+                  Свободно: {formatMB(stats.memory_free_mb ?? Math.max(0, stats.memory_total_mb - stats.memory_used_mb))}
                 </div>
+                {(stats.swap_total_mb != null && stats.swap_total_mb > 0) && (
+                  <div className="eye-block-extra">
+                    Swap: {formatMB(stats.swap_used_mb ?? 0)} / {formatMB(stats.swap_total_mb)}
+                  </div>
+                )}
               </Card>
               {stats.disk_percent != null && (
                 <Card
@@ -352,6 +365,9 @@ export default function App() {
                   <div className="eye-block-extra">
                     {stats.disk_used_gb ?? 0} ГБ / {stats.disk_total_gb ?? 0} ГБ
                   </div>
+                  {stats.disk_path && (
+                    <div className="eye-block-extra">{stats.disk_path}</div>
+                  )}
                 </Card>
               )}
               {(stats.gpu_percent != null || stats.gpu_name || stats.gpu_temp_c != null) && (
@@ -482,18 +498,35 @@ export default function App() {
                   status={stats.cpu_percent > 90 ? 'error' : stats.cpu_percent > 70 ? 'busy' : 'online'}
                 />
               </div>
-              {(stats.cpu_model_name || (stats.cpu_mhz != null && stats.cpu_mhz > 0)) && (
-                <div className="eye-detail-stats">
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">Характеристики CPU</h3>
+                <dl className="eye-info-list">
                   {stats.cpu_model_name && (
-                    <DataText size="base" title={stats.cpu_model_name}>
-                      {stats.cpu_model_name}
-                    </DataText>
+                    <>
+                      <dt>Модель</dt>
+                      <dd title={stats.cpu_model_name}>{stats.cpu_model_name}</dd>
+                    </>
                   )}
                   {stats.cpu_mhz != null && stats.cpu_mhz > 0 && (
-                    <DataText size="base">{(stats.cpu_mhz / 1000).toFixed(2)} GHz</DataText>
+                    <>
+                      <dt>Частота</dt>
+                      <dd>{(stats.cpu_mhz / 1000).toFixed(2)} GHz</dd>
+                    </>
                   )}
-                </div>
-              )}
+                  {(stats.cpu_cores != null && stats.cpu_cores > 0) && (
+                    <>
+                      <dt>Ядра (логические)</dt>
+                      <dd>{stats.cpu_cores}</dd>
+                    </>
+                  )}
+                  {(stats.cpu_physical_cores != null && stats.cpu_physical_cores > 0) && (
+                    <>
+                      <dt>Ядра (физические)</dt>
+                      <dd>{stats.cpu_physical_cores}</dd>
+                    </>
+                  )}
+                </dl>
+              </Card>
               <p className="eye-chart-hint">
                 Последние {CHART_POINTS} замеров, каждые {REFRESH_MS / 1000} с.
               </p>
@@ -522,10 +555,37 @@ export default function App() {
                 <DataText size="base">
                   {formatMB(stats.memory_used_mb)} / {formatMB(stats.memory_total_mb)}
                 </DataText>
-                <DataText size="sm" className="eye-detail-muted">
-                  Свободно: {formatMB(Math.max(0, stats.memory_total_mb - stats.memory_used_mb))}
-                </DataText>
               </div>
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">ОЗУ (RAM)</h3>
+                <dl className="eye-info-list">
+                  <dt>Занято</dt>
+                  <dd>{formatMB(stats.memory_used_mb)}</dd>
+                  <dt>Всего</dt>
+                  <dd>{formatMB(stats.memory_total_mb)}</dd>
+                  <dt>Свободно</dt>
+                  <dd>{formatMB(stats.memory_free_mb ?? Math.max(0, stats.memory_total_mb - stats.memory_used_mb))}</dd>
+                  {(stats.memory_available_mb != null && stats.memory_available_mb !== stats.memory_free_mb) && (
+                    <>
+                      <dt>Доступно</dt>
+                      <dd>{formatMB(stats.memory_available_mb)}</dd>
+                    </>
+                  )}
+                </dl>
+                {(stats.swap_total_mb != null && stats.swap_total_mb > 0) && (
+                  <>
+                    <h3 className="eye-info-title eye-info-title--sub">Swap</h3>
+                    <dl className="eye-info-list">
+                      <dt>Занято</dt>
+                      <dd>{formatMB(stats.swap_used_mb ?? 0)}</dd>
+                      <dt>Всего</dt>
+                      <dd>{formatMB(stats.swap_total_mb)}</dd>
+                      <dt>Свободно</dt>
+                      <dd>{formatMB(stats.swap_free_mb ?? 0)}</dd>
+                    </dl>
+                  </>
+                )}
+              </Card>
               <p className="eye-chart-hint">
                 Последние {CHART_POINTS} замеров, каждые {REFRESH_MS / 1000} с.
               </p>
@@ -554,6 +614,23 @@ export default function App() {
                   {stats.disk_used_gb ?? 0} ГБ / {stats.disk_total_gb ?? 0} ГБ
                 </DataText>
               </div>
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">Диск</h3>
+                <dl className="eye-info-list">
+                  {stats.disk_path && (
+                    <>
+                      <dt>Путь</dt>
+                      <dd>{stats.disk_path}</dd>
+                    </>
+                  )}
+                  <dt>Занято</dt>
+                  <dd>{stats.disk_used_gb ?? 0} ГБ</dd>
+                  <dt>Всего</dt>
+                  <dd>{stats.disk_total_gb ?? 0} ГБ</dd>
+                  <dt>Свободно</dt>
+                  <dd>{stats.disk_free_gb ?? Math.max(0, (stats.disk_total_gb ?? 0) - (stats.disk_used_gb ?? 0))} ГБ</dd>
+                </dl>
+              </Card>
               <p className="eye-chart-hint">
                 Последние {CHART_POINTS} замеров, каждые {REFRESH_MS / 1000} с.
               </p>
@@ -578,18 +655,36 @@ export default function App() {
                   value={stats.gpu_percent != null ? `${stats.gpu_percent.toFixed(1)}%` : '—'}
                   label="Загрузка"
                 />
-                {stats.gpu_name ? (
-                  <DataText size="base">{stats.gpu_name}</DataText>
-                ) : null}
-                {stats.gpu_temp_c != null && stats.gpu_temp_c > 0 ? (
-                  <DataText size="base">{stats.gpu_temp_c} °C</DataText>
-                ) : null}
-                {(stats.gpu_memory_used_mb != null || stats.gpu_memory_total_mb != null) && (
-                  <DataText size="base">
-                    VRAM: {formatMB(stats.gpu_memory_used_mb ?? 0)} / {formatMB(stats.gpu_memory_total_mb ?? 0)}
-                  </DataText>
-                )}
               </div>
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">GPU</h3>
+                <dl className="eye-info-list">
+                  {stats.gpu_name && (
+                    <>
+                      <dt>Модель</dt>
+                      <dd>{stats.gpu_name}</dd>
+                    </>
+                  )}
+                  {stats.gpu_temp_c != null && stats.gpu_temp_c > 0 && (
+                    <>
+                      <dt>Температура</dt>
+                      <dd>{stats.gpu_temp_c} °C</dd>
+                    </>
+                  )}
+                  {(stats.gpu_memory_used_mb != null || stats.gpu_memory_total_mb != null) && (
+                    <>
+                      <dt>VRAM</dt>
+                      <dd>{formatMB(stats.gpu_memory_used_mb ?? 0)} / {formatMB(stats.gpu_memory_total_mb ?? 0)}</dd>
+                    </>
+                  )}
+                  {stats.gpu_percent != null && (
+                    <>
+                      <dt>Загрузка</dt>
+                      <dd>{stats.gpu_percent.toFixed(1)}%</dd>
+                    </>
+                  )}
+                </dl>
+              </Card>
               <p className="eye-chart-hint">
                 Последние {CHART_POINTS} замеров, каждые {REFRESH_MS / 1000} с.
               </p>
@@ -609,14 +704,17 @@ export default function App() {
 
           {selectedSection === 'network' && (
             <div className="eye-detail">
-              <div className="eye-detail-stats">
-                <DataText size="base">
-                  Отправлено: {formatBytes(stats.net_bytes_sent ?? 0)}
-                </DataText>
-                <DataText size="base">
-                  Получено: {formatBytes(stats.net_bytes_recv ?? 0)}
-                </DataText>
-              </div>
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">Сеть (суммарный I/O)</h3>
+                <dl className="eye-info-list">
+                  <dt>Отправлено</dt>
+                  <dd>{formatBytes(stats.net_bytes_sent ?? 0)}</dd>
+                  <dt>Получено</dt>
+                  <dd>{formatBytes(stats.net_bytes_recv ?? 0)}</dd>
+                  <dt>Всего</dt>
+                  <dd>{formatBytes((stats.net_bytes_sent ?? 0) + (stats.net_bytes_recv ?? 0))}</dd>
+                </dl>
+              </Card>
               <p className="eye-chart-hint">
                 Скорость (МБ/с), последние {CHART_POINTS} замеров.
               </p>
@@ -659,7 +757,7 @@ export default function App() {
               <div className="eye-detail-stats">
                 <MetricHero
                   value={stats.uptime_sec != null ? formatUptime(stats.uptime_sec) : '—'}
-                  label="Время работы"
+                  label="Время работы системы"
                 />
                 {stats.uptime_sec != null && (
                   <DataText size="base">
@@ -667,6 +765,43 @@ export default function App() {
                   </DataText>
                 )}
               </div>
+              <Card variant="default" className="eye-info-card">
+                <h3 className="eye-info-title">Система</h3>
+                <dl className="eye-info-list">
+                  {stats.hostname && (
+                    <>
+                      <dt>Имя ПК</dt>
+                      <dd>{stats.hostname}</dd>
+                    </>
+                  )}
+                  {stats.os && (
+                    <>
+                      <dt>ОС</dt>
+                      <dd>{stats.os}</dd>
+                    </>
+                  )}
+                  {stats.platform && (
+                    <>
+                      <dt>Платформа</dt>
+                      <dd>{stats.platform}</dd>
+                    </>
+                  )}
+                  {stats.kernel_arch && (
+                    <>
+                      <dt>Архитектура</dt>
+                      <dd>{stats.kernel_arch}</dd>
+                    </>
+                  )}
+                  {stats.kernel_version && (
+                    <>
+                      <dt>Ядро</dt>
+                      <dd>{stats.kernel_version}</dd>
+                    </>
+                  )}
+                  <dt>Процессов</dt>
+                  <dd>{stats.process_count ?? 0}</dd>
+                </dl>
+              </Card>
             </div>
           )}
 

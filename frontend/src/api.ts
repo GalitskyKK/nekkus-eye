@@ -4,17 +4,31 @@ export interface Stats {
   cpu_percent: number
   cpu_model_name?: string
   cpu_mhz?: number
+  cpu_cores?: number
+  cpu_physical_cores?: number
   memory_percent: number
   memory_used_mb: number
   memory_total_mb: number
+  memory_free_mb?: number
+  memory_available_mb?: number
+  swap_total_mb?: number
+  swap_used_mb?: number
+  swap_free_mb?: number
   disk_percent?: number
   disk_used_gb?: number
   disk_total_gb?: number
+  disk_free_gb?: number
+  disk_path?: string
   gpu_percent?: number
   gpu_name?: string
   gpu_temp_c?: number
   gpu_memory_used_mb?: number
   gpu_memory_total_mb?: number
+  hostname?: string
+  platform?: string
+  os?: string
+  kernel_arch?: string
+  kernel_version?: string
   uptime_sec?: number
   process_count?: number
   net_bytes_sent?: number
